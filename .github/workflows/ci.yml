@@ -1,0 +1,115 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  TF_VERSION: '1.7.5'
+  # Pinned by SHA-equivalent version tag; the azurerm tflint-ruleset version
+  # is pinned in .tflint.hcl, which is where tflint --init reads it from.
+  TFLINT_VERSION: 'v0.50.3'
+
+jobs:
+  fmt:
+    name: terraform fmt -check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: terraform fmt -check -recursive
+        run: terraform fmt -check -recursive stock-modules
+
+  validate:
+    name: terraform validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - stock-modules/vnet
+          - stock-modules/cosmosdb
+          - stock-modules/service-bus
+          - stock-modules/clickhouse-database
+          - stock-modules/kafka-topic
+          - stock-modules/vnet/examples/basic
+          - stock-modules/cosmosdb/examples/basic
+          - stock-modules/service-bus/examples/basic
+          - stock-modules/clickhouse-database/examples/basic
+          - stock-modules/kafka-topic/examples/basic
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          persist-credentials: false
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - name: terraform init -backend=false
+        working-directory: ${{ matrix.module }}
+        # init -backend=false avoids needing real Azure credentials in CI;
+        # provider binaries still download from the registry.
+        run: terraform init -backend=false
+      - name: terraform validate
+        working-directory: ${{ matrix.module }}
+        run: terraform validate
+
+  tflint:
+    name: tflint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - stock-modules/vnet
+          - stock-modules/cosmosdb
+          - stock-modules/service-bus
+          - stock-modules/clickhouse-database
+          - stock-modules/kafka-topic
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          persist-credentials: false
+      - name: Install tflint (pinned + checksum-verified)
+        run: |
+          set -euo pipefail
+          BASE="https://github.com/terraform-linters/tflint/releases/download/${TFLINT_VERSION}"
+          curl -fsSLO "${BASE}/tflint_linux_amd64.zip"
+          curl -fsSLO "${BASE}/checksums.txt"
+          grep ' tflint_linux_amd64.zip$' checksums.txt | sha256sum -c -
+          unzip -q tflint_linux_amd64.zip
+          sudo mv tflint /usr/local/bin/
+          tflint --version
+      # tflint resolves its config from --config / ./.tflint.hcl only - it
+      # does NOT walk parent directories, and --recursive re-resolves a
+      # relative --config in every scanned subdirectory, so pass an absolute
+      # path.
+      - name: tflint --init (pinned plugins from .tflint.hcl)
+        working-directory: ${{ matrix.module }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: tflint --init --config "${GITHUB_WORKSPACE}/.tflint.hcl"
+      - name: tflint
+        working-directory: ${{ matrix.module }}
+        run: tflint --recursive --config "${GITHUB_WORKSPACE}/.tflint.hcl" --disable-rule=terraform_required_providers --disable-rule=terraform_required_version
+
+  secret-output-check:
+    name: forbid 'sensitive = false' on secret-pattern outputs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          persist-credentials: false
+      # Outputs whose names match (?i)(token|pat|secret|password|key|
+      # connectionstring) must carry an explicit sensitive = true. See
+      # docs/Terraform/MODULE-CONTRACT.md in sefe/dorc.
+      - name: scan stock-modules
+        run: python3 scripts/check-secret-outputs.py stock-modules
