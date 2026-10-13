@@ -20,6 +20,10 @@ module "kafka_topic" {
   retention_ms        = 86400000 # 1 day
   retention_bytes     = -1
 
+  # Topic-specific grants; baseline access should come from
+  # platform-managed prefix ACLs.
+  acl_entries = "traveler-app:readwrite"
+
   # Throwaway example environment; keep protection on in production.
   termination_protection = false
 }

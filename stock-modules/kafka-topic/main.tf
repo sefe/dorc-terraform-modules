@@ -27,6 +27,14 @@ locals {
     pr = "traveler-production"
   }
   service_name = var.service_name != "" ? var.service_name : local.service_by_tier[var.environment_tier]
+
+  # "user:permission,user:permission" -> list of {username, permission};
+  # string-encoded so the DOrc catalog (simple parameter types only) can
+  # drive it.
+  acl_entries = [for e in compact(split(",", replace(var.acl_entries, " ", ""))) : {
+    username   = split(":", e)[0]
+    permission = split(":", e)[1]
+  }]
 }
 
 resource "aiven_kafka_topic" "this" {
@@ -43,4 +51,17 @@ resource "aiven_kafka_topic" "this" {
     retention_bytes     = var.retention_bytes
     retention_ms        = var.retention_ms
   }
+}
+
+# Per-topic grants so the topic is usable with cluster ACL enforcement on.
+# Baseline access should come from platform-managed prefix ACLs (see
+# README); these entries cover topic-specific needs only.
+resource "aiven_kafka_acl" "this" {
+  for_each = { for a in local.acl_entries : "${a.username}:${a.permission}" => a }
+
+  project      = var.project
+  service_name = local.service_name
+  topic        = local.topic_name
+  username     = each.value.username
+  permission   = each.value.permission
 }

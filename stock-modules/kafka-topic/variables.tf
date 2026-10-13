@@ -188,3 +188,19 @@ variable "termination_protection" {
   type        = bool
   default     = true
 }
+
+# --- Access control ---------------------------------------------------------
+
+variable "acl_entries" {
+  description = "Optional comma-separated Aiven Kafka ACL grants on this topic, each 'username:permission' (permission one of admin, read, readwrite, write; username may use * and ? wildcards), e.g. 'traveler-app:readwrite,analytics-*:read'. Leave empty when platform-managed prefix ACLs already cover the topic."
+  type        = string
+  default     = ""
+
+  validation {
+    condition = alltrue([
+      for e in compact(split(",", replace(var.acl_entries, " ", ""))) :
+      can(regex("^[A-Za-z0-9_?*-]+:(admin|read|readwrite|write)$", e))
+    ])
+    error_message = "acl_entries must be comma-separated 'username:permission' pairs with permission one of admin, read, readwrite, write."
+  }
+}

@@ -22,3 +22,8 @@ output "partitions" {
   description = "Number of partitions on the topic."
   value       = aiven_kafka_topic.this.partitions
 }
+
+output "acl_ids" {
+  description = "IDs of the Aiven Kafka ACL entries created for this topic."
+  value       = [for a in aiven_kafka_acl.this : a.id]
+}
