@@ -4,13 +4,14 @@ module "kafka_topic" {
   # project defaults to trading-traveler; service_name is derived from
   # environment_tier (dv -> traveler-unstable-dev).
 
-  # Composes topic name: tr.dv.gbl.traveler.trade-events.il2
+  # Composes topic name: tr.dv.gbl.traveler.trade-events.il2.dev01
   business_vertical = "tr"
   environment_tier  = "dv"
   scope             = "gbl"
   data_grouping     = "traveler"
   data_description  = "trade-events"
   integrity_level   = "il2"
+  dorc_environment  = "dev01"
 
   partitions          = 3
   replication         = 2

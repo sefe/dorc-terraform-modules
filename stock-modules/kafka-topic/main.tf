@@ -1,6 +1,10 @@
 # Topic name per the SEFE Kafka messaging standard; optional trailing
-# segments are dropped when empty.
+# segments are dropped when empty. The DOrc environment the topic is linked
+# to is always the final segment, matching existing DOrc-linked topics
+# (e.g. tr.dv.gbl.trades.il2.tradeevents.gma.dev01).
 locals {
+  dorc_environment_segment = replace(lower(var.dorc_environment), "/[^a-z0-9_-]/", "")
+
   topic_name = join(".", compact([
     var.business_vertical,
     var.environment_tier,
@@ -10,6 +14,7 @@ locals {
     var.integrity_level,
     var.origin,
     var.publisher_identifier,
+    local.dorc_environment_segment,
   ]))
 
   # SEFE traveler Kafka instances (Aiven BYOC on Azure uksouth). When no

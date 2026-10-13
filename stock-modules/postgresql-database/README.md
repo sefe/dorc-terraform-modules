@@ -8,18 +8,18 @@
 | **Provider** | `aiven/aiven >= 4.1.1, < 5.0.0` |
 | **Terraform** | `>= 1.5.0` |
 
-Creates a PostgreSQL database on an **existing** Aiven PostgreSQL service. The service itself is referenced, never managed — service provisioning (plan, cloud, networking) stays with the platform team.
+Creates a PostgreSQL database on an Aiven PostgreSQL service. The module **creates the service layer by default**; re-using an existing service is the opt-in path (`create_service = false`), in which case the service is referenced, never managed.
 
 ## SEFE BYOC placement
 
-SEFE Aiven services run **BYOC** (bring-your-own-cloud) on Azure uksouth. Target a PostgreSQL service on the matching custom cloud; its nodes live in SEFE's Azure estate:
+SEFE Aiven services run **BYOC** (bring-your-own-cloud) on Azure uksouth. Created services default to the non-prod custom cloud; nodes live in SEFE's Azure estate:
 
-| Environment | Custom cloud | Azure resource group |
+| Environment | Custom cloud (`cloud_name`) | Azure resource group |
 |---|---|---|
-| Non-prod | `custom-sefe-nprod-workload-azure-uksouth` | `rg-np-aiven-1-uks` (SMT-NP) |
+| Non-prod (default) | `custom-sefe-nprod-workload-azure-uksouth` | `rg-np-aiven-1-uks` (SMT-NP) |
 | Prod | `custom-sefe-prod-workload-azure-uksouth` | `rg-pr-aiven-1-uks` (SMT-PR) |
 
-The resource groups are informational — Aiven manages the nodes; this module only takes `project`/`service_name`.
+The resource groups are informational — Aiven manages the nodes.
 
 ## Authentication
 
@@ -30,7 +30,11 @@ The Aiven provider authenticates with an API token. Per the module contract the 
 | Name | Type | Required | Description |
 |---|---|:-:|---|
 | `project` | string | yes | Aiven console project (lowercase alnum + hyphens). |
-| `service_name` | string | yes | Existing PostgreSQL service name. |
+| `create_service` | bool | no (`true`) | Create the service layer; set `false` to re-use an existing service. |
+| `service_name` | string | yes | Service name — created by default, or the existing service to re-use. |
+| `cloud_name` | string | no (non-prod custom cloud) | Cloud for the created service; see BYOC placement. |
+| `plan` | string | no (`startup-4`) | Aiven plan for the created service. |
+| `service_termination_protection` | bool | no (`true`) | Delete protection on the created service. |
 | `database_name` | string | yes | Database name; immutable (change forces recreation). |
 | `lc_collate` | string | no (`en_US.UTF-8`) | Default sort order; immutable. |
 | `lc_ctype` | string | no (`en_US.UTF-8`) | Default character classification; immutable. |

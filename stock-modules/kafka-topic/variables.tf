@@ -43,6 +43,16 @@ variable "environment_tier" {
   }
 }
 
+variable "dorc_environment" {
+  description = "DOrc environment the topic is linked to, e.g. dev01 or ut02. Normalised (lowercased, characters outside [a-z0-9_-] removed) and appended as the final topic-name segment, matching existing DOrc-linked topics such as tr.dv.gbl.trades.il2.tradeevents.gma.dev01."
+  type        = string
+
+  validation {
+    condition     = length(replace(lower(var.dorc_environment), "/[^a-z0-9_-]/", "")) > 0
+    error_message = "dorc_environment must contain at least one letter, number, underscore or hyphen."
+  }
+}
+
 variable "scope" {
   description = "Topic scope: gbl (global), lcl (local), usr (user), tst (test)."
   type        = string

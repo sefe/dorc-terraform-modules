@@ -41,11 +41,13 @@ jobs:
           - stock-modules/service-bus
           - stock-modules/clickhouse-database
           - stock-modules/kafka-topic
+          - stock-modules/postgresql-database
           - stock-modules/vnet/examples/basic
           - stock-modules/cosmosdb/examples/basic
           - stock-modules/service-bus/examples/basic
           - stock-modules/clickhouse-database/examples/basic
           - stock-modules/kafka-topic/examples/basic
+          - stock-modules/postgresql-database/examples/basic
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
@@ -74,6 +76,7 @@ jobs:
           - stock-modules/service-bus
           - stock-modules/clickhouse-database
           - stock-modules/kafka-topic
+          - stock-modules/postgresql-database
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:

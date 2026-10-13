@@ -11,10 +11,10 @@
 Creates a single Kafka topic on an **existing** Aiven Kafka service, composing the topic name from the SEFE Kafka messaging standard:
 
 ```
-<business_vertical>.<environment_tier>.<scope>.<data_grouping>.<data_description>.<integrity_level>[.<origin>][.<publisher_identifier>]
+<business_vertical>.<environment_tier>.<scope>.<data_grouping>.<data_description>.<integrity_level>[.<origin>][.<publisher_identifier>].<dorc_environment>
 ```
 
-e.g. `tr.dv.gbl.traveler.trade-events.il2`. Optional segments (`origin`, `publisher_identifier`) are omitted when left empty. Conventions follow the Trading Core `Traveler.Topics.Terraform` repository.
+e.g. `tr.dv.gbl.traveler.trade-events.il2.dev01`. Optional segments (`origin`, `publisher_identifier`) are omitted when left empty. The DOrc environment the topic is linked to is always the final segment — the tier says *which class* of environment, the DOrc environment says *which instance*, matching existing DOrc-linked topics such as `tr.dv.gbl.trades.il2.tradeevents.gma.dev01`. Conventions follow the Trading Core `Traveler.Topics.Terraform` repository.
 
 ## Target Kafka instances (SEFE BYOC)
 
@@ -40,6 +40,7 @@ The Aiven provider authenticates with an API token. Per the module contract the 
 | `service_name` | string | no (``) | One of the traveler instances; empty = derived from `environment_tier`. |
 | `business_vertical` | string | yes | Two-character vertical code (e.g. `tr`). |
 | `environment_tier` | string | yes | One of `dv`, `ut`, `qa`, `pp`, `pr`. |
+| `dorc_environment` | string | yes | DOrc environment instance (e.g. `dev01`, `ut02`); normalised and appended as the final segment. |
 | `scope` | string | yes | One of `gbl`, `lcl`, `usr`, `tst`. |
 | `data_grouping` | string | yes | Logical grouping segment (app/domain). |
 | `data_description` | string | yes | Data description segment (entity/message type). |
